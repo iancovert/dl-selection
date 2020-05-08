@@ -52,4 +52,3 @@ class TabularDataset(Dataset):
 
     def __getitem__(self, index):
         return self.input[index], self.output[index]
-

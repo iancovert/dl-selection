@@ -1,4 +1,4 @@
 from .mlp import MLP
 from .mlp import SelectorMLP
-from models import utils
-
+from . import train
+from . import utils

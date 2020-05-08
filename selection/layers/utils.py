@@ -23,4 +23,3 @@ def concrete_bernoulli_sample(probs, temperature, shape=torch.Size([])):
     return torch.sigmoid(
         (torch.log(probs) - torch.log(1 - probs)
          + torch.log(u) - torch.log(1 - u)) / temperature)
-

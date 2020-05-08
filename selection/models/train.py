@@ -1,7 +1,7 @@
 import torch
-import selection
 import numpy as np
-from models import utils
+import selection.layers as layers
+from selection.models import utils
 from copy import deepcopy
 from torch.utils.data import DataLoader
 
@@ -122,15 +122,15 @@ class AnnealedTemperatureTraining:
         if mask_output:
             # Verify that model is based on mask or gates.
             assert (
-                isinstance(self.model.input_layer, selection.ConcreteMask) or
-                isinstance(self.model.input_layer, selection.ConcreteGates))
+                isinstance(self.model.input_layer, layers.ConcreteMask) or
+                isinstance(self.model.input_layer, layers.ConcreteGates))
 
         if lam is not None:
             # Verify that model is based on gates.
-            assert isinstance(self.model.input_layer, selection.ConcreteGates)
+            assert isinstance(self.model.input_layer, layers.ConcreteGates)
         else:
             # Verify that model is not based on gates.
-            assert not isinstance(self.model.input_layer, selection.ConcreteGates)
+            assert not isinstance(self.model.input_layer, layers.ConcreteGates)
 
         # Determine whether or not to require mask return.
         return_mask = lam or mask_output
@@ -231,4 +231,3 @@ class AnnealedTemperatureTraining:
 
             # Fix input layer if necessary.
             utils.input_layer_fix(self.model.input_layer)
-

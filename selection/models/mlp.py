@@ -1,7 +1,7 @@
-import selection
 import torch.nn as nn
-from models import utils
-from models import train
+import selection.layers as layers
+from selection.models import utils
+from selection.models import train
 from torch.utils.data import DataLoader
 
 
@@ -73,16 +73,16 @@ class SelectorMLP(nn.Module):
             append = kwargs.get('append', True)
             kwargs['append'] = append
             mlp_input_size = 2 * input_size if append else input_size
-            self.input_layer = selection.ConcreteMask(input_size, **kwargs)
+            self.input_layer = layers.ConcreteMask(input_size, **kwargs)
         elif input_layer == 'concrete_selector':
             k = kwargs.get('k')
             mlp_input_size = k
-            self.input_layer = selection.ConcreteSelector(input_size, **kwargs)
+            self.input_layer = layers.ConcreteSelector(input_size, **kwargs)
         elif input_layer == 'concrete_gates':
             append = kwargs.get('append', True)
             kwargs['append'] = append
             mlp_input_size = 2 * input_size if append else input_size
-            self.input_layer = selection.ConcreteGates(input_size, **kwargs)
+            self.input_layer = layers.ConcreteGates(input_size, **kwargs)
         else:
             raise ValueError('unsupported input layer: {}'.format(input_layer))
 
@@ -97,8 +97,8 @@ class SelectorMLP(nn.Module):
         return_mask = kwargs.get('return_mask', False)
         if return_mask:
             assert (
-                isinstance(self.input_layer, selection.ConcreteMask) or
-                isinstance(self.input_layer, selection.ConcreteGates))
+                isinstance(self.input_layer, layers.ConcreteMask) or
+                isinstance(self.input_layer, layers.ConcreteGates))
             x, m = self.input_layer(x, **kwargs)
             return self.mlp(x), m
         else:
@@ -111,4 +111,3 @@ class SelectorMLP(nn.Module):
 
     def get_inds(self, **kwargs):
         return self.input_layer.get_inds(**kwargs)
-

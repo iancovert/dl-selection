@@ -1,7 +1,7 @@
-import selection
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import selection.layers as layers
 
 
 class MSELoss(nn.Module):
@@ -113,17 +113,17 @@ def validate_input_layer(model, loader, loss_fn, n_samples=None,
 
 def input_layer_converged(input_layer, tol=1e-3, n_samples=None):
     with torch.no_grad():
-        if isinstance(input_layer, selection.ConcreteMask):
+        if isinstance(input_layer, layers.ConcreteMask):
             m = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(m, dim=0)
             return torch.sort(mean).values[-input_layer.k] > 1 - tol
 
-        elif isinstance(input_layer, selection.ConcreteSelector):
+        elif isinstance(input_layer, layers.ConcreteSelector):
             M = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(M, dim=0)
             return torch.min(torch.max(mean, dim=1).values) > 1 - tol
 
-        elif isinstance(input_layer, selection.ConcreteGates):
+        elif isinstance(input_layer, layers.ConcreteGates):
             m = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(m, dim=0)
             return torch.max(torch.min(mean, 1 - mean)) < tol
@@ -131,8 +131,8 @@ def input_layer_converged(input_layer, tol=1e-3, n_samples=None):
 
 def input_layer_fix(input_layer):
     needs_reset = (
-        isinstance(input_layer, selection.ConcreteMask) or
-        isinstance(input_layer, selection.ConcreteSelector))
+        isinstance(input_layer, layers.ConcreteMask) or
+        isinstance(input_layer, layers.ConcreteSelector))
     if needs_reset:
         # Extract logits.
         logits = input_layer.logits
@@ -146,13 +146,13 @@ def input_layer_fix(input_layer):
 
 
 def input_layer_penalty(input_layer, m):
-    assert isinstance(input_layer, selection.ConcreteGates)
+    assert isinstance(input_layer, layers.ConcreteGates)
     return torch.mean(torch.sum(m, dim=-1))
 
 
 def input_layer_summary(input_layer, n_samples=None):
     with torch.no_grad():
-        if isinstance(input_layer, selection.ConcreteMask):
+        if isinstance(input_layer, layers.ConcreteMask):
             m = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(m, dim=0)
             relevant = torch.sort(mean, descending=True).values[:input_layer.k]
@@ -160,7 +160,7 @@ def input_layer_summary(input_layer, n_samples=None):
                 relevant[0].item(), torch.mean(relevant).item(),
                 relevant[-1].item())
 
-        elif isinstance(input_layer, selection.ConcreteSelector):
+        elif isinstance(input_layer, layers.ConcreteSelector):
             M = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(M, dim=0)
             relevant = torch.max(mean, dim=1).values
@@ -168,7 +168,7 @@ def input_layer_summary(input_layer, n_samples=None):
                 torch.max(relevant).item(), torch.mean(relevant).item(),
                 torch.min(relevant).item())
 
-        elif isinstance(input_layer, selection.ConcreteGates):
+        elif isinstance(input_layer, layers.ConcreteGates):
             m = input_layer.sample(n_samples=n_samples)
             mean = torch.mean(m, dim=0)
             dist = torch.min(mean, 1 - mean)
@@ -181,4 +181,3 @@ def input_layer_summary(input_layer, n_samples=None):
 def restore_parameters(model, best_model):
     for params, best_params in zip(model.parameters(), best_model.parameters()):
         params.data = best_params
-
