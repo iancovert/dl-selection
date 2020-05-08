@@ -4,9 +4,18 @@ from selection.layers import utils
 
 
 class ConcreteGates(nn.Module):
+    '''
+    Input layer that selects features by learning binary gates for each feature.
+
+    Args:
+      input_size: number of inputs.
+      k: number of features to be selected.
+      temperature: temperature for Concrete samples.
+      init: initial value for each gate's probability of being 1.
+      append: whether to append the mask to the input on forward pass.
+    '''
     def __init__(self, input_size, temperature=1.0, init=0.01, append=False):
         super().__init__()
-        # init_logit = - temperature * torch.log(1 / torch.tensor(init) - 1)
         init_logit = - torch.log(1 / torch.tensor(init) - 1)
         self.logits = nn.Parameter(torch.full(
             (input_size,), init_logit, dtype=torch.float32, requires_grad=True))
@@ -17,7 +26,6 @@ class ConcreteGates(nn.Module):
 
     @property
     def probs(self):
-        # return torch.sigmoid(self.logits / self.temperature)
         return torch.sigmoid(self.logits)
 
     def forward(self, x, n_samples=None, return_mask=False):
@@ -42,6 +50,7 @@ class ConcreteGates(nn.Module):
             return x
 
     def sample(self, n_samples=None, sample_shape=None):
+        '''Sample approximate binary masks.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
         return utils.concrete_bernoulli_sample(1 - self.probs, self.temperature,

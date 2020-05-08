@@ -4,34 +4,40 @@ from torch.utils.data import Dataset
 
 
 class TabularDataset(Dataset):
-    '''Dataset capable of using subset of inputs and outputs.'''
+    '''
+    Dataset capable of using subset of inputs and outputs.
+
+    Args:
+      data: inputs (np.ndarray or torch.Tensor).
+      targets: outputs (np.ndarray or torch.Tensor)
+    '''
     def __init__(self,
                  data,
-                 labels):
+                 targets):
         self.input_size = data.shape[1]
         if isinstance(data, np.ndarray):
             # Conversions for numpy.
             self.data = data.astype(np.float32)
-            if len(labels.shape) == 1:
-                self.output_size = len(np.unique(labels))
-                self.labels = labels.astype(np.long)
+            if len(targets.shape) == 1:
+                self.output_size = len(np.unique(targets))
+                self.targets = targets.astype(np.long)
             else:
-                self.output_size = labels.shape[1]
-                self.labels = labels.astype(np.float32)
+                self.output_size = targets.shape[1]
+                self.targets = targets.astype(np.float32)
         elif isinstance(data, torch.Tensor):
             # Conversions for PyTorch.
             self.data = data.float()
-            if len(labels.shape) == 1:
-                self.output_size = len(torch.unique(labels))
-                self.labels = labels.long()
+            if len(targets.shape) == 1:
+                self.output_size = len(torch.unique(targets))
+                self.targets = targets.long()
             else:
-                self.output_size = labels.shape[1]
-                self.labels = labels.float()
+                self.output_size = targets.shape[1]
+                self.targets = targets.float()
         self.set_inds(None)
         self.set_output_inds(None)
 
     def set_inds(self, inds=None):
-        '''Set indices to be returned.'''
+        '''Set input indices to be returned.'''
         data = self.data
         if inds is not None:
             inds = np.array([i in inds for i in range(self.input_size)])
@@ -39,10 +45,10 @@ class TabularDataset(Dataset):
         self.input = data
 
     def set_output_inds(self, inds=None):
-        '''Set indices to be returned.'''
-        output = self.labels
+        '''Set output indices to be returned.'''
+        output = self.targets
         if inds is not None:
-            assert len(output.shape) == 2
+            assert len(output.shape) == 2, 'only for multitask regression tasks'
             inds = np.array([i in inds for i in range(self.output_size)])
             output = output[:, inds]
         self.output = output

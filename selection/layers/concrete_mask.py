@@ -4,6 +4,15 @@ from selection.layers import utils
 
 
 class ConcreteMask(nn.Module):
+    '''
+    Input layer that selects features by learning a k-hot mask.
+
+    Args:
+      input_size: number of inputs.
+      k: number of features to be selected.
+      temperature: temperature for Concrete samples.
+      append: whether to append the mask to the input on forward pass.
+    '''
     def __init__(self, input_size, k, temperature=10.0, append=False):
         super().__init__()
         self.logits = nn.Parameter(
@@ -45,6 +54,7 @@ class ConcreteMask(nn.Module):
             return x
 
     def sample(self, n_samples=None, sample_shape=None):
+        '''Sample approximate k-hot vectors.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
         elif not sample_shape:

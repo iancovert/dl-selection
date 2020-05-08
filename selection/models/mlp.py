@@ -10,11 +10,11 @@ class MLP(nn.Module):
     Multilayer perceptron (MLP) model.
 
     Args:
-      input_size: input features.
-      output_size: output dimensionality.
-      hidden: number of hidden layers.
+      input_size: number of inputs.
+      output_size: number of outputs.
+      hidden: list of hidden layer widths.
       activation: nonlinearity between hidden layers.
-      output_activation: nonlinearity at output layer.
+      output_activation: nonlinearity at output.
     '''
     def __init__(self,
                  input_size,
@@ -56,7 +56,18 @@ class MLP(nn.Module):
 
 
 class SelectorMLP(nn.Module):
-    '''MLP with input layer selection.'''
+    '''MLP with input layer selection.
+
+    Args:
+      input_layer: input layer type (e.g., 'concrete_gates').
+      input_size: number of inputs.
+      output_size: number of outputs.
+      hidden: list of hidden layer widths.
+      activation: nonlinearity between hidden layers.
+      output_activation: nonlinearity at output.
+      kwargs: additional arguments (e.g., k, init, append). Some are optional,
+        but k is required for ConcreteMask and ConcreteGates.
+    '''
     def __init__(self,
                  input_layer,
                  input_size,

@@ -24,8 +24,11 @@ The module `selection.models` implements a class `SelectorMLP` for automatically
 import torch.nn as nn
 from selection import models
 
+# Load data
 train_dataset, val_dataset = ...
+input_size, output_size = ...
 
+# Set up model
 model = models.SelectorMLP(
     input_layer='concrete_mask',
     k=20,
@@ -33,7 +36,8 @@ model = models.SelectorMLP(
     output_size=output_size,
     hidden=[256, 256],
     activation='elu')
-    
+
+# Train model
 model.train(
     train_dataset,
     val_dataset,
@@ -43,7 +47,8 @@ model.train(
     start_temperature=10.0,
     end_temperature=0.01,
     loss_fn=nn.CrossEntropyLoss())
-    
+
+# Extract selected indices
 inds = model.get_inds()
 ```
 
@@ -57,7 +62,7 @@ The easiest way to install this package is with pip:
 pip install dl-selection
 ```
 
-Or, you can just clone the repository.
+Or, you can clone the repository to get the most recent version of the code.
 
 ## Authors
 

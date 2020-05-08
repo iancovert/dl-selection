@@ -112,6 +112,7 @@ def validate_input_layer(model, loader, loss_fn, n_samples=None,
 
 
 def input_layer_converged(input_layer, tol=1e-3, n_samples=None):
+    '''Determine whether the input layer has converged.'''
     with torch.no_grad():
         if isinstance(input_layer, layers.ConcreteMask):
             m = input_layer.sample(n_samples=n_samples)
@@ -130,6 +131,7 @@ def input_layer_converged(input_layer, tol=1e-3, n_samples=None):
 
 
 def input_layer_fix(input_layer):
+    '''Fix collisions in the input layer.'''
     needs_reset = (
         isinstance(input_layer, layers.ConcreteMask) or
         isinstance(input_layer, layers.ConcreteSelector))
@@ -146,11 +148,13 @@ def input_layer_fix(input_layer):
 
 
 def input_layer_penalty(input_layer, m):
+    '''Calculate the regularization term for the input layer.'''
     assert isinstance(input_layer, layers.ConcreteGates)
     return torch.mean(torch.sum(m, dim=-1))
 
 
 def input_layer_summary(input_layer, n_samples=None):
+    '''Provide a short summary of the input layer's convergence.'''
     with torch.no_grad():
         if isinstance(input_layer, layers.ConcreteMask):
             m = input_layer.sample(n_samples=n_samples)
@@ -179,5 +183,6 @@ def input_layer_summary(input_layer, n_samples=None):
 
 
 def restore_parameters(model, best_model):
+    '''Move parameter values from best_model to model.'''
     for params, best_params in zip(model.parameters(), best_model.parameters()):
         params.data = best_params

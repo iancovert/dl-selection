@@ -7,6 +7,12 @@ from torch.utils.data import DataLoader
 
 
 class Training:
+    '''
+    Class for training PyTorch models.
+
+    Args:
+      model: the model to be trained.
+    '''
     def __init__(self, model):
         self.model = model
         self.trained = False
@@ -20,7 +26,23 @@ class Training:
                  loss_fn,
                  optimizer='Adam',
                  lookback=5,
+                 check_every=1,
                  verbose=True):
+        '''
+        Train the model.
+
+        Args:
+          train_dataset: training dataset.
+          val_dataset: validation dataset.
+          lr: learning rate.
+          mbsize: minibatch size.
+          max_nepochs: maximum number of epochs.
+          loss_fn: loss function.
+          optimizer: optimizer type.
+          lookback: number of epochs to wait for improvement before stopping.
+          check_every: number of epochs between loss value checks.
+          verbose: verbosity.
+        '''
         # Ensure model has not yet been trained.
         assert not self.trained
         self.trained = True
@@ -73,7 +95,7 @@ class Training:
                 self.train_loss.append(train_loss)
                 self.val_loss.append(val_loss)
 
-                if verbose:
+                if verbose and ((epoch + 1) % check_every == 0):
                     print('{}Epoch = {}{}'.format('-' * 8, epoch + 1, '-' * 8))
                     print('Train loss = {:.4f}'.format(train_loss))
                     print('Val loss = {:.4f}'.format(val_loss))
@@ -107,8 +129,28 @@ class AnnealedTemperatureTraining:
                  end_temperature,
                  loss_fn,
                  optimizer='Adam',
+                 check_every=1,
                  verbose=True,
                  **kwargs):
+        '''
+        Train the model.
+
+        Args:
+          train_dataset: training dataset.
+          val_dataset: validation dataset.
+          lr: learning rate.
+          mbsize: minibatch size.
+          max_nepochs: maximum number of epochs.
+          start_temperature:
+          end_temperature:
+          loss_fn: loss function.
+          optimizer: optimizer type.
+          lookback: number of epochs to wait for improvement before stopping.
+          check_every: number of epochs between loss value checks.
+          verbose: verbosity.
+          kwargs: additional arguments (e.g. n_samples, mask_output, lam). These
+            are optional, except lam is required for ConcreteGates.
+        '''
         # Ensure model has not yet been trained.
         assert not self.trained
         self.trained = True
@@ -215,7 +257,7 @@ class AnnealedTemperatureTraining:
                 self.train_loss.append(train_loss)
                 self.val_loss.append(val_loss)
 
-                if verbose:
+                if verbose and ((epoch + 1) % check_every == 0):
                     print('{}Epoch = {}{}'.format('-' * 8, epoch + 1, '-' * 8))
                     print('Train loss = {:.4f}'.format(train_loss))
                     print('Val loss = {:.4f}'.format(val_loss))

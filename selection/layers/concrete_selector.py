@@ -4,6 +4,14 @@ from selection.layers import utils
 
 
 class ConcreteSelector(nn.Module):
+    '''
+    Input layer that selects features by learning a binary matrix.
+
+    Args:
+      input_size: number of inputs.
+      k: number of features to be selected.
+      temperature: temperature for Concrete samples.
+    '''
     def __init__(self, input_size, k, temperature=10.0):
         super().__init__()
         self.logits = nn.Parameter(
@@ -37,6 +45,7 @@ class ConcreteSelector(nn.Module):
         return x
 
     def sample(self, n_samples=None, sample_shape=None):
+        '''Sample approximate binary matrices.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
         return utils.concrete_sample(self.u_probs, self.temperature,
