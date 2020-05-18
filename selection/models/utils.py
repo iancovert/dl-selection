@@ -141,7 +141,7 @@ def input_layer_fix(input_layer):
         argmax = torch.argmax(logits, dim=1).cpu().data.numpy()
 
         # Locate collisions and reinitialize.
-        for i in range(len(argmax) - 2):
+        for i in range(len(argmax) - 1):
             if argmax[i] in argmax[i+1:]:
                 logits.data[i] = torch.randn(
                     logits[i].shape, dtype=logits.dtype, device=logits.device)
