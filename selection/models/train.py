@@ -86,10 +86,12 @@ class Training:
             # Check progress.
             with torch.no_grad():
                 # Calculate loss.
+                self.model.eval()
                 train_loss = utils.validate(
                     self.model, train_loader, loss_fn).item()
                 val_loss = utils.validate(
                     self.model, val_loader, loss_fn).item()
+                self.model.train()
 
                 # Record loss.
                 self.train_loss.append(train_loss)
@@ -115,6 +117,12 @@ class Training:
 
 
 class AnnealedTemperatureTraining:
+    '''
+    Class for training PyTorch models with a temperature parameter.
+
+    Args:
+      model: the model to be trained.
+    '''
     def __init__(self, model):
         self.model = model
         self.trained = False
@@ -188,10 +196,8 @@ class AnnealedTemperatureTraining:
         # Determine device.
         device = next(self.model.parameters()).device
 
-        # Set temperature.
+        # Set temperature and determine rate for decreasing.
         self.model.input_layer.temperature = start_temperature
-
-        # Determine rate for decreasing temperature.
         r = np.power(end_temperature / start_temperature,
                      1 / ((len(train_dataset) // mbsize) * max_nepochs))
 
@@ -241,10 +247,12 @@ class AnnealedTemperatureTraining:
             # Check progress.
             with torch.no_grad():
                 # Calculate loss.
+                self.model.eval()
                 train_loss = utils.validate_input_layer(
                     self.model, train_loader, loss_fn).item()
                 val_loss = utils.validate_input_layer(
                     self.model, val_loader, loss_fn).item()
+                self.model.train()
 
                 # Calculate penalty if necessary.
                 if lam:

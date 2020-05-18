@@ -21,7 +21,8 @@ class MLP(nn.Module):
                  output_size,
                  hidden,
                  activation,
-                 output_activation=None):
+                 output_activation=None,
+                 batch_norm=False):
         super().__init__()
 
         # Fully connected layers.
@@ -35,21 +36,33 @@ class MLP(nn.Module):
         self.activation = utils.get_activation(activation)
         self.output_activation = utils.get_activation(output_activation)
 
+        # Set up batch norm.
+        if batch_norm:
+            layer_normalizers = [nn.BatchNorm1d(d) for d in hidden]
+        else:
+            layer_normalizers = [nn.Identity() for d in hidden]
+        self.layer_normalizers = nn.ModuleList(layer_normalizers)
+
         # Set up training.
-        self.train = train.Training(self)
+        self.learn = train.Training(self)
 
     def forward(self, x):
-        for i, fc in enumerate(self.fc):
-            if i > 0:
-                x = self.activation(x)
+        for fc, norm in zip(self.fc, self.layer_normalizers):
             x = fc(x)
+            x = self.activation(x)
+            x = norm(x)
 
-        return self.output_activation(x)
+        return self.output_activation(self.fc[-1](x))
 
     def evaluate(self, dataset, loss_fn, mbsize=None):
+        training = self.training
+        self.eval()
         mbsize = mbsize if mbsize else len(dataset)
         loader = DataLoader(dataset, batch_size=mbsize)
-        return utils.validate(self, loader, loss_fn)
+        loss = utils.validate(self, loader, loss_fn)
+        if training:
+            self.train()
+        return loss
 
     def extra_repr(self):
         return 'hidden={}'.format([fc.in_features for fc in self.fc[1:]])
@@ -75,6 +88,7 @@ class SelectorMLP(nn.Module):
                  hidden,
                  activation,
                  output_activation=None,
+                 batch_norm=False,
                  **kwargs):
         super().__init__()
 
@@ -99,10 +113,10 @@ class SelectorMLP(nn.Module):
 
         # Set up MLP.
         self.mlp = MLP(mlp_input_size, output_size, hidden, activation,
-                       output_activation)
+                       output_activation, batch_norm)
 
         # Set up training.
-        self.train = train.AnnealedTemperatureTraining(self)
+        self.learn = train.AnnealedTemperatureTraining(self)
 
     def forward(self, x, **kwargs):
         return_mask = kwargs.get('return_mask', False)
@@ -116,9 +130,14 @@ class SelectorMLP(nn.Module):
             return self.mlp(self.input_layer(x, **kwargs))
 
     def evaluate(self, dataset, loss_fn, mbsize=None, **kwargs):
+        training = self.training
+        self.eval()
         mbsize = mbsize if mbsize else len(dataset)
         loader = DataLoader(dataset, batch_size=mbsize)
-        return utils.validate_input_layer(self, loader, loss_fn, **kwargs)
+        loss = utils.validate_input_layer(self, loader, loss_fn, **kwargs)
+        if training:
+            self.train()
+        return loss
 
     def get_inds(self, **kwargs):
         return self.input_layer.get_inds(**kwargs)

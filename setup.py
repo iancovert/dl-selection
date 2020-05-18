@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="dl-selection",
-    version="0.0.1",
+    version="0.0.2",
     author="Ian Covert",
     author_email="icovert@cs.washington.edu",
     description="Feature selection for deep learning models.",
