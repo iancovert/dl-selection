@@ -23,7 +23,7 @@ class ConcreteSelector(nn.Module):
 
     @property
     def u_probs(self):
-        return torch._C._nn.softplus(self.logits) ** 2
+        return torch.exp(self.logits)
 
     @property
     def probs(self):
