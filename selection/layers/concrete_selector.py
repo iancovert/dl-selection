@@ -5,7 +5,10 @@ from selection.layers import utils
 
 class ConcreteSelector(nn.Module):
     '''
-    Input layer that selects features by learning a binary matrix.
+    Input layer that selects features by learning a binary matrix, based on [2].
+
+    [2] Concrete Autoencoders for Differentiable Feature Selection and
+    Reconstruction (Balin et al., 2019)
 
     Args:
       input_size: number of inputs.
@@ -15,20 +18,15 @@ class ConcreteSelector(nn.Module):
     def __init__(self, input_size, k, temperature=10.0):
         super().__init__()
         self.logits = nn.Parameter(
-            torch.randn(k, input_size, dtype=torch.float32, requires_grad=True))
+            torch.zeros(k, input_size, dtype=torch.float32, requires_grad=True))
         self.input_size = input_size
         self.k = k
         self.output_size = k
         self.temperature = temperature
 
     @property
-    def u_probs(self):
-        return torch.exp(self.logits)
-
-    @property
     def probs(self):
-        u_probs = self.u_probs
-        return u_probs / torch.sum(u_probs, dim=1, keepdim=True)
+        return self.logits.softmax(dim=1)
 
     def forward(self, x, n_samples=None, **kwargs):
         # Sample selection matrix.
@@ -48,11 +46,11 @@ class ConcreteSelector(nn.Module):
         '''Sample approximate binary matrices.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
-        return utils.concrete_sample(self.u_probs, self.temperature,
+        return utils.concrete_sample(self.logits, self.temperature,
                                      sample_shape)
 
     def get_inds(self, **kwargs):
-        return torch.argmax(self.probs, dim=1).cpu().data.numpy()
+        return torch.argmax(self.logits, dim=1).cpu().data.numpy()
 
     def extra_repr(self):
         return 'input_size={}, temperature={}, k={}'.format(

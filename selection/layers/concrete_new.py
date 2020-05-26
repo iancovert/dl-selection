@@ -3,33 +3,29 @@ import torch.nn as nn
 from selection.layers import utils
 
 
-# Implicit temperature for the link function to accelerate optimization.
-implicit_temp = 1 / 3.0
-
-
-class ConcreteMask(nn.Module):
+class ConcreteNew(nn.Module):
     '''
-    Input layer that selects features by learning a k-hot mask.
+    Input layer that selects features by learning a k-hot vector.
 
     Args:
       input_size: number of inputs.
       k: number of features to be selected.
       temperature: temperature for Concrete samples.
-      append: whether to append the mask to the input on forward pass.
     '''
     def __init__(self, input_size, k, temperature=10.0, append=False):
         super().__init__()
         self.logits = nn.Parameter(
-            torch.zeros(k, input_size, dtype=torch.float32, requires_grad=True))
+            torch.randn(k, input_size, dtype=torch.float32, requires_grad=True))
         self.input_size = input_size
         self.k = k
-        self.output_size = 2 * input_size if append else input_size
+        self.output_size = k
         self.temperature = temperature
         self.append = append
 
     @property
     def probs(self):
-        return (self.logits / implicit_temp).softmax(dim=1)
+        probs = torch.softmax(self.logits / self.temperature, dim=1)
+        return torch.clamp(torch.sum(probs, dim=0), max=1.0)
 
     def forward(self, x, n_samples=None, return_mask=False):
         # Sample mask.
@@ -53,18 +49,15 @@ class ConcreteMask(nn.Module):
             return x
 
     def sample(self, n_samples=None, sample_shape=None):
-        '''Sample approximate k-hot vectors.'''
+        '''Sample approximate binary masks.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
-        elif not sample_shape:
-            raise ValueError('n_samples or sample_shape must be specified')
-        samples = utils.concrete_sample(self.logits / implicit_temp,
-                                        self.temperature, sample_shape)
-        return torch.max(samples, dim=-2).values
+        return utils.concrete_bernoulli_sample(self.probs, self.temperature,
+                                               sample_shape)
 
     def get_inds(self, **kwargs):
-        return torch.argmax(self.logits, dim=1).cpu().data.numpy()
+        return torch.argsort(self.probs)[-self.k:].cpu().data.numpy()
 
     def extra_repr(self):
-        return 'input_size={}, temperature={}, k={}, append={}'.format(
-            self.input_size, self.temperature, self.k, self.append)
+        return 'input_size={}, temperature={}, k={}'.format(
+            self.input_size, self.temperature, self.k)

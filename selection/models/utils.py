@@ -129,6 +129,9 @@ def input_layer_converged(input_layer, tol=1e-3, n_samples=None):
             mean = torch.mean(m, dim=0)
             return torch.max(torch.min(mean, 1 - mean)) < tol
 
+        elif isinstance(input_layer, layers.ConcreteMax):
+            return False
+
 
 def input_layer_fix(input_layer):
     '''Fix collisions in the input layer.'''
@@ -180,6 +183,14 @@ def input_layer_summary(input_layer, n_samples=None):
                 torch.mean(dist).item(),
                 torch.max(dist).item(),
                 int(torch.sum((mean > 0.5).float()).item()))
+
+        elif isinstance(input_layer, layers.ConcreteMax):
+            m = input_layer.sample(n_samples=n_samples)
+            mean = torch.mean(m, dim=0)
+            relevant = torch.sort(mean, descending=True).values[:input_layer.k]
+            return 'Max = {:.2f}, Mean = {:.2f}, Min = {:.2f}'.format(
+                relevant[0].item(), torch.mean(relevant).item(),
+                relevant[-1].item())
 
 
 def restore_parameters(model, best_model):

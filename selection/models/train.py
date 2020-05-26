@@ -173,6 +173,7 @@ class AnnealedTemperatureTraining:
             # Verify that model is based on mask or gates.
             assert (
                 isinstance(self.model.input_layer, layers.ConcreteMask) or
+                isinstance(self.model.input_layer, layers.ConcreteMax) or
                 isinstance(self.model.input_layer, layers.ConcreteGates))
 
         if lam is not None:

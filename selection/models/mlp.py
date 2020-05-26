@@ -108,6 +108,11 @@ class SelectorMLP(nn.Module):
             kwargs['append'] = append
             mlp_input_size = 2 * input_size if append else input_size
             self.input_layer = layers.ConcreteGates(input_size, **kwargs)
+        elif input_layer == 'concrete_max':
+            append = kwargs.get('append', True)
+            kwargs['append'] = append
+            mlp_input_size = 2 * input_size if append else input_size
+            self.input_layer = layers.ConcreteMax(input_size, **kwargs)
         else:
             raise ValueError('unsupported input layer: {}'.format(input_layer))
 

@@ -4,12 +4,16 @@ from selection.layers import utils
 
 
 # Implicit temperature for the link function to accelerate optimization.
-implicit_temp = 1 / 3.0
+implicit_temp = 1 / 5.0
 
 
-class ConcreteMask(nn.Module):
+class ConcreteMax(nn.Module):
     '''
-    Input layer that selects features by learning a k-hot mask.
+    Input layer that selects features by learning probabilities for independent
+    sampling from a Concrete variable, based on [3].
+
+    [3] Learning to Explain: An Information Theoretic Perspective on Model
+    Interpretation (Chen et al., 2018)
 
     Args:
       input_size: number of inputs.
@@ -20,7 +24,7 @@ class ConcreteMask(nn.Module):
     def __init__(self, input_size, k, temperature=10.0, append=False):
         super().__init__()
         self.logits = nn.Parameter(
-            torch.zeros(k, input_size, dtype=torch.float32, requires_grad=True))
+            torch.randn(1, input_size, dtype=torch.float32, requires_grad=True))
         self.input_size = input_size
         self.k = k
         self.output_size = 2 * input_size if append else input_size
@@ -29,7 +33,7 @@ class ConcreteMask(nn.Module):
 
     @property
     def probs(self):
-        return (self.logits / implicit_temp).softmax(dim=1)
+        return (self.logits / implicit_temp).softmax(dim=1)[0]
 
     def forward(self, x, n_samples=None, return_mask=False):
         # Sample mask.
@@ -58,12 +62,12 @@ class ConcreteMask(nn.Module):
             sample_shape = torch.Size([n_samples])
         elif not sample_shape:
             raise ValueError('n_samples or sample_shape must be specified')
-        samples = utils.concrete_sample(self.logits / implicit_temp,
+        samples = utils.concrete_sample(self.logits.repeat(self.k, 1) / implicit_temp,
                                         self.temperature, sample_shape)
         return torch.max(samples, dim=-2).values
 
     def get_inds(self, **kwargs):
-        return torch.argmax(self.logits, dim=1).cpu().data.numpy()
+        return torch.argsort(self.logits[0])[-self.k:].cpu().data.numpy()
 
     def extra_repr(self):
         return 'input_size={}, temperature={}, k={}, append={}'.format(

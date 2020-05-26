@@ -1,25 +1,32 @@
 import torch
+import torch.nn.functional as F
 
 
 def clamp_probs(probs):
     eps = torch.finfo(probs.dtype).eps
     return torch.clamp(probs, min=eps, max=1-eps)
 
+def concrete_sample(logits, temperature, shape=torch.Size([])):
+    '''
+    Sampling for Concrete distribution.
 
-def concrete_sample(u_probs, temperature, shape=torch.Size([])):
-    uniform_shape = torch.Size(shape) + u_probs.shape
+    See Eq. 10 of Maddison et al., 2017.
+    '''
+    uniform_shape = torch.Size(shape) + logits.shape
     u = clamp_probs(torch.rand(uniform_shape, dtype=torch.float32,
-                               device=u_probs.device))
+                               device=logits.device))
     gumbels = - torch.log(- torch.log(u))
-    scores = (u_probs + gumbels) / temperature
+    scores = (logits + gumbels) / temperature
     return scores.softmax(dim=-1)
 
+def bernoulli_concrete_sample(logits, temperature, shape=torch.Size([])):
+    '''
+    Sampling for BinConcrete distribution.
 
-def concrete_bernoulli_sample(probs, temperature, shape=torch.Size([])):
-    probs = clamp_probs(probs)
-    uniform_shape = torch.Size(shape) + probs.shape
+    See PyTorch source code, differs from Eq. 16 of Maddison et al., 2017.
+    '''
+    uniform_shape = torch.Size(shape) + logits.shape
     u = clamp_probs(torch.rand(uniform_shape, dtype=torch.float32,
-                               device=probs.device))
-    return torch.sigmoid(
-        (torch.log(probs) - torch.log(1 - probs)
-         + torch.log(u) - torch.log(1 - u)) / temperature)
+                               device=logits.device))
+    return torch.sigmoid((F.logsigmoid(logits) - F.logsigmoid(-logits)
+                          + torch.log(u) - torch.log(1 - u)) / temperature)

@@ -3,9 +3,16 @@ import torch.nn as nn
 from selection.layers import utils
 
 
+# Implicit temperature for the link function to accelerate optimization.
+implicit_temp = 1 / 2.0
+
+
 class ConcreteGates(nn.Module):
     '''
-    Input layer that selects features by learning binary gates for each feature.
+    Input layer that selects features by learning binary gates for each feature,
+    based on [1].
+
+    [1] Dropout Feature Ranking for Deep Learning Models (Chang et al., 2017)
 
     Args:
       input_size: number of inputs.
@@ -16,7 +23,7 @@ class ConcreteGates(nn.Module):
     '''
     def __init__(self, input_size, temperature=1.0, init=0.01, append=False):
         super().__init__()
-        init_logit = - torch.log(1 / torch.tensor(init) - 1)
+        init_logit = - torch.log(1 / torch.tensor(init) - 1) * implicit_temp
         self.logits = nn.Parameter(torch.full(
             (input_size,), init_logit, dtype=torch.float32, requires_grad=True))
         self.input_size = input_size
@@ -26,7 +33,7 @@ class ConcreteGates(nn.Module):
 
     @property
     def probs(self):
-        return torch.sigmoid(self.logits)
+        return torch.sigmoid(self.logits / implicit_temp)
 
     def forward(self, x, n_samples=None, return_mask=False):
         # Sample mask.
@@ -53,8 +60,8 @@ class ConcreteGates(nn.Module):
         '''Sample approximate binary masks.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
-        return utils.concrete_bernoulli_sample(1 - self.probs, self.temperature,
-                                               sample_shape)
+        return utils.bernoulli_concrete_sample(- self.logits / implicit_temp,
+                                               self.temperature, sample_shape)
 
     def get_inds(self, num_features=None, threshold=None, **kwargs):
         if num_features:
