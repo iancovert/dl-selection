@@ -21,7 +21,7 @@ class ConcreteGates(nn.Module):
       init: initial value for each gate's probability of being 1.
       append: whether to append the mask to the input on forward pass.
     '''
-    def __init__(self, input_size, temperature=1.0, init=0.01, append=False):
+    def __init__(self, input_size, temperature=1.0, init=0.99, append=False):
         super().__init__()
         init_logit = - torch.log(1 / torch.tensor(init) - 1) * implicit_temp
         self.logits = nn.Parameter(torch.full(
@@ -60,16 +60,17 @@ class ConcreteGates(nn.Module):
         '''Sample approximate binary masks.'''
         if n_samples:
             sample_shape = torch.Size([n_samples])
-        return utils.bernoulli_concrete_sample(- self.logits / implicit_temp,
+        return utils.bernoulli_concrete_sample(self.logits / implicit_temp,
                                                self.temperature, sample_shape)
 
     def get_inds(self, num_features=None, threshold=None, **kwargs):
         if num_features:
-            return torch.argsort(self.probs)[-num_features:].cpu().data.numpy()
+            inds = torch.argsort(self.probs)[-num_features:]
         elif threshold:
-            return (self.probs < threshold).nonzero()[:, 0].cpu().data.numpy()
+            inds = (self.probs > threshold).nonzero()[:, 0]
         else:
-            raise ValueError('num_features or p_threshold must be specified')
+            raise ValueError('num_features or threshold must be specified')
+        return torch.sort(inds)[0].cpu().data.numpy()
 
     def extra_repr(self):
         return 'input_size={}, temperature={}, append={}'.format(

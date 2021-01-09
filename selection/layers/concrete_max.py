@@ -67,7 +67,8 @@ class ConcreteMax(nn.Module):
         return torch.max(samples, dim=-2).values
 
     def get_inds(self, **kwargs):
-        return torch.argsort(self.logits[0])[-self.k:].cpu().data.numpy()
+        inds = torch.argsort(self.logits[0])[-self.k:]
+        return torch.sort(inds)[0].cpu().data.numpy()
 
     def extra_repr(self):
         return 'input_size={}, temperature={}, k={}, append={}'.format(

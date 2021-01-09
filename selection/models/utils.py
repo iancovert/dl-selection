@@ -68,16 +68,17 @@ def validate(model, loader, loss_fn):
     device = next(model.parameters()).device
     mean_loss = 0
     N = 0
-    for x, y in loader:
-        # Move to GPU.
-        x = x.to(device=device)
-        y = y.to(device=device)
-        n = len(x)
+    with torch.no_grad():
+        for x, y in loader:
+            # Move to GPU.
+            x = x.to(device=device)
+            y = y.to(device=device)
+            n = len(x)
 
-        # Calculate loss.
-        loss = loss_fn(model(x), y)
-        mean_loss = (N * mean_loss + n * loss) / (N + n)
-        N += n
+            # Calculate loss.
+            loss = loss_fn(model(x), y)
+            mean_loss = (N * mean_loss + n * loss) / (N + n)
+            N += n
 
     return mean_loss
 
@@ -88,25 +89,26 @@ def validate_input_layer(model, loader, loss_fn, n_samples=None,
     device = next(model.parameters()).device
     mean_loss = 0
     N = 0
-    for x, y in loader:
-        # Move to GPU.
-        x = x.to(device=device)
-        y = y.to(device=device)
-        n = len(x)
+    with torch.no_grad():
+        for x, y in loader:
+            # Move to GPU.
+            x = x.to(device=device)
+            y = y.to(device=device)
+            n = len(x)
 
-        # Forward pass.
-        if mask_output:
-            pred, m = model(x, n_samples=n_samples, return_mask=True)
-        else:
-            pred = model(x, n_samples=n_samples)
+            # Forward pass.
+            if mask_output:
+                pred, m = model(x, n_samples=n_samples, return_mask=True)
+            else:
+                pred = model(x, n_samples=n_samples)
 
-        # Calculate loss.
-        if mask_output:
-            loss = loss_fn(pred, y, weights=1-m)
-        else:
-            loss = loss_fn(pred, y)
-        mean_loss = (N * mean_loss + n * loss) / (N + n)
-        N += n
+            # Calculate loss.
+            if mask_output:
+                loss = loss_fn(pred, y, weights=1-m)
+            else:
+                loss = loss_fn(pred, y)
+            mean_loss = (N * mean_loss + n * loss) / (N + n)
+            N += n
 
     return mean_loss
 
